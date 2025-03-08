@@ -28,6 +28,62 @@ export default function Puzzle() {
     emptyBox.current = { ...distCoordinates[0][0] };
   }, [distCoordinates]);
 
+  useEffect(() => {
+    const handleSwap = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowUp') {
+        const coordinate = {
+          x: emptyBox.current.x,
+          y: emptyBox.current.y + 1
+        };
+        for(const value in boxes.current) {
+          if(boxes.current[value].coordinate.x === coordinate.x && boxes.current[value].coordinate.y === coordinate.y) {
+            boxes.current[value].swap();
+            break;
+          }
+        }
+      } else if (e.key === 'ArrowDown') {
+        const coordinate = {
+          x: emptyBox.current.x,
+          y: emptyBox.current.y - 1
+        };
+        for(const value in boxes.current) {
+          if(boxes.current[value].coordinate.x === coordinate.x && boxes.current[value].coordinate.y === coordinate.y) {
+            boxes.current[value].swap();
+            break;
+          }
+        }
+      } else if (e.key === 'ArrowLeft') {
+        const coordinate = {
+          x: emptyBox.current.x + 1,
+          y: emptyBox.current.y
+        };
+        for(const value in boxes.current) {
+          if(boxes.current[value].coordinate.x === coordinate.x && boxes.current[value].coordinate.y === coordinate.y) {
+            boxes.current[value].swap();
+            break;
+          }
+        }
+      } else if (e.key === 'ArrowRight') {
+        const coordinate = {
+          x: emptyBox.current.x - 1,
+          y: emptyBox.current.y
+        };
+        for(const value in boxes.current) {
+          if(boxes.current[value].coordinate.x === coordinate.x && boxes.current[value].coordinate.y === coordinate.y) {
+            boxes.current[value].swap();
+            break;
+          }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleSwap);
+
+    return () => {
+      document.removeEventListener('keydown', handleSwap);
+    }
+  }, []);
+
   return (
     <div className='h-[80vh] aspect-square relative bg-blue-300 rounded-lg'>
       {
@@ -65,12 +121,15 @@ function Box({ value, coordinate, boxes, moves, local: { current: ls }, emptyBox
   const prevCoord = useRef(emptyBox.current);
   
   useEffect(() => {
-    boxes.current[value] = { coordinate, swap(){} };
+    boxes.current[value] = { coordinate, swap() {
+      variantChanged.current = false;
+      setCoord({ ...emptyBox.current });
+      prevCoord.current = { ...this.coordinate };
+    }};
 
     return () => {
       delete boxes.current[value]
     }
-
   }, [value]);
 
   useEffect(() => {
