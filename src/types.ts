@@ -3,14 +3,23 @@ export enum Variant {
   "X15"
 }
 
-export type Coordinate = {
+export interface Coordinate {
   x: number,
   y: number
 }
 
-export type Boxes = {
+export interface Boxes {
   [key: string]: {
     coordinate: Coordinate;
     swap: () => void
+  }
+}
+
+export type LS = {
+  x8: {
+    record: number
+  },
+  x15: {
+    record: number
   }
 }

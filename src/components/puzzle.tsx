@@ -1,6 +1,8 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useContext, useEffect, useRef, useState } from "react"
 import { VariantContext } from "../contexts"
-import { Boxes, Coordinate, Variant } from "../types";
+import { Boxes, Coordinate, LS, Variant } from "../types";
+import WinDialog from "./winDialog";
 
 
 export default function Puzzle() {
@@ -8,6 +10,10 @@ export default function Puzzle() {
   const variant = useContext(VariantContext);
 
   const length = variant === Variant.X8 ? 8 : 15;
+
+  const [win, setWin] = useState(false);
+  const totalMoves = useRef(0);
+  const ls: React.RefObject<LS> = useRef(JSON.parse(localStorage.getItem("sliding-puzzle") || '{"x15":{"record":"Infinity"},"x8":{"record":"Infinity"}}'));
 
   const distVals: number[] = Array.from({ length }, (_, i) => i + 1);
   const distCoordinates = Array.from({ length: Math.ceil(Math.sqrt(length)) }, (_, y) =>
@@ -23,9 +29,9 @@ export default function Puzzle() {
   }, [distCoordinates]);
 
   return (
-    <div className='h-[80vh] mt-8 mx-auto aspect-square relative bg-blue-300 rounded-lg'>
+    <div className='h-[80vh] aspect-square relative bg-blue-300 rounded-lg'>
       {
-        Array.from({ length }).map((_, i) => {
+        !win ? Array.from({ length }).map((_, i) => {
           const distCoord = distCoordinates;
           const value = Number(distVals.splice(Math.floor(Math.random() * distVals.length), 1)[0]);
 
@@ -33,54 +39,71 @@ export default function Puzzle() {
           const coordinate = distCoord[row].splice(
             Math.floor(Math.random() * distCoord[row].length), 1
           )[0];
-
+          
           if (!distCoord[row].length) distCoord.splice(row, 1);
-
+          
           return (
-            <Box key={i} boxes={boxes} value={value} emptyBox={emptyBox} coordinate={{ x: coordinate.x, y: coordinate.y }} />
+            <Box key={i} boxes={boxes} local={ls} setWin={setWin} moves={totalMoves} value={value} emptyBox={emptyBox} coordinate={{ x: coordinate.x, y: coordinate.y }} />
           )
-        })
+        }) : null
       }
+
+      <WinDialog display={win} moves={totalMoves} local={ls} onClose={() => {
+        setWin(false);
+      }} />
     </div>
   )
 }
 
-function Box({ value, coordinate, boxes, emptyBox }: { value: number, coordinate: Coordinate, boxes: React.RefObject<Boxes>, emptyBox: React.RefObject<Coordinate> }) {
+function Box({ value, coordinate, boxes, moves, local: { current: ls }, emptyBox, setWin }: { value: number, local: React.RefObject<LS>, moves: React.RefObject<number>, coordinate: Coordinate, boxes: React.RefObject<Boxes>, emptyBox: React.RefObject<Coordinate>, setWin: React.Dispatch<React.SetStateAction<boolean>> }) {
   const variant = useContext(VariantContext);
+  const variantChanged = useRef(true);
 
   const divisions = variant === Variant.X8 ? 3 : 4;
-
+  
   const [coord, setCoord] = useState(coordinate);
   const prevCoord = useRef(emptyBox.current);
-
+  
   useEffect(() => {
-    boxes.current[value] = {
-      coordinate,
-      swap() {
+    boxes.current[value] = { coordinate, swap(){} };
 
-      }
+    return () => {
+      delete boxes.current[value]
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+
+  }, [value]);
 
   useEffect(() => {
     setCoord(coordinate);
   }, [coordinate]);
 
   useEffect(() => {
+    variantChanged.current = true;
+    moves.current = 0;
+  }, [variant]);
+
+  useEffect(() => {
+    if(variantChanged.current) return;
+
+    moves.current++;
     emptyBox.current = { ...prevCoord.current };
     if(boxes.current[value]) {
       boxes.current[value].coordinate = coord;
 
       // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-      checkWin(boxes.current) && alert('You win!');
+      checkWin(boxes.current) && (() => {
+        setWin(true);
+        if (ls[variant === Variant.X8 ? 'x8' : 'x15'].record > moves.current) {
+          ls[variant === Variant.X8 ? 'x8' : 'x15'].record = moves.current;
+          localStorage.setItem("sliding-puzzle", JSON.stringify(ls));
+        }
+      })();
     }
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [coord, value]);
 
 
   const onClick = () => {
+    variantChanged.current = false;
     const emptyCoordinate = emptyBox.current;
 
     if (coord.x === emptyCoordinate.x && Math.abs(coord.y - emptyCoordinate.y) === 1) {

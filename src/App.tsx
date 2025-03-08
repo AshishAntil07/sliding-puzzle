@@ -10,8 +10,10 @@ function App() {
 
   return (
     <VariantContext.Provider value={variant}>
-      <Menu setVariant={setVariant} />
-      <Puzzle />
+      <div className="flex flex-row flex-nowrap gap-6">
+        <Menu setVariant={setVariant} />
+        <Puzzle />
+      </div>
     </VariantContext.Provider>
   )
 }
