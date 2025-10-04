@@ -1,11 +1,15 @@
+/* eslint-disable @typescript-eslint/no-unused-expressions */
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useContext, useEffect, useRef, useState } from "react"
 import { VariantContext } from "../contexts"
 import { Boxes, Coordinate, LS, Variant } from "../types";
 import WinDialog from "./winDialog";
+import isValid from "../utils/isValid";
 
 
 export default function Puzzle() {
+
+  const [helper ,rerender] = useState(Math.random());
 
   const variant = useContext(VariantContext);
 
@@ -23,10 +27,18 @@ export default function Puzzle() {
   const boxes = useRef({} as Boxes);
   
   const emptyBox = useRef({ ...distCoordinates[0][0] });
-  
+
   useEffect(() => {
     emptyBox.current = { ...distCoordinates[0][0] };
   }, [distCoordinates]);
+
+  useEffect(() => {
+    setWin(false);
+  }, [variant]);
+
+  useEffect(() => {
+    isValid(boxes.current, variant) && rerender(Math.random());
+  }, [helper]);
 
   useEffect(() => {
     const handleSwap = (e: KeyboardEvent) => {
@@ -149,7 +161,6 @@ function Box({ value, coordinate, boxes, moves, local: { current: ls }, emptyBox
     if(boxes.current[value]) {
       boxes.current[value].coordinate = coord;
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
       checkWin(boxes.current) && (() => {
         setWin(true);
         if (ls[variant === Variant.X8 ? 'x8' : 'x15'].record > moves.current) {
